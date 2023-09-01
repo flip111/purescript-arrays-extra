@@ -1,3 +1,5 @@
+-- | Unsafe but faster functions due to no out of bounds checking.
+
 module Data.Array.Extra.Unsafe where
 
 -- | Delete the element at index `i` in an array

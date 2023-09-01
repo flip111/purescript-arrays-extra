@@ -1,3 +1,5 @@
+-- | Functions that either update or insert an element into an array.
+
 module Data.Array.Extra.Upsert where
 
 import Data.Array (cons, findIndex, snoc)

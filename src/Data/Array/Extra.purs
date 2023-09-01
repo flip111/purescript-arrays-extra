@@ -1,3 +1,5 @@
+-- | Some specialized functions can be found here.
+
 module Data.Array.Extra where
 
 import Data.Array (deleteBy, foldl, foldr, sortBy)
@@ -21,7 +23,6 @@ sortWithBy f comp = sortBy (comp `on` f)
 -- | ```
 differenceBy :: forall a. (a -> a -> Boolean) -> Array a -> Array a -> Array a
 differenceBy eq xs ys = foldr (deleteBy eq) xs ys
-
 
 -- | Try to make a projection from an array. Return an array with the projection and the original array with the elements removed.
 -- |

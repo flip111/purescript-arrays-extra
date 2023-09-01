@@ -1,3 +1,5 @@
+-- | This module defines functions that do something with an array based on a predicate.
+
 module Data.Array.Extra.Find where
 
 import Data.Array (cons, elem, findIndex, insertBy, snoc, unsafeIndex)
@@ -94,7 +96,6 @@ insertByWith' comp x array =
     Nothing
   else
     Just (insertBy comp x array)
-
 
 -- | Find an element by a predicate and return an array with the updated element when it was found
 -- |
