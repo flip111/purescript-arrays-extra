@@ -1,7 +1,7 @@
 -- | This module defines functions that conditionally map over a functor.
 -- | Outputting both the new functor and the old values that were replaced.
 
-module Data.Array.Extra.MapWriter where
+module Data.Array.Extra.FunctorWriter where
 
 import Data.Maybe (Maybe, maybe)
 import Data.Traversable (class Traversable, traverse)
