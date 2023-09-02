@@ -9,7 +9,7 @@ module Data.Array.Extra.Unsafe (
   ) where
 
 import Data.Array (head)
-import Data.Maybe (Maybe, fromJust)
+import Data.Maybe (Maybe, fromJust, fromJust)
 import Partial.Unsafe (unsafePartial)
 
 -- | Delete the element at index `i` in an array
@@ -55,4 +55,4 @@ foreign import unsafeModifyAtImpl :: forall a. Int -> (a -> a) -> Array a -> Arr
 -- | Get the first element in an array. Passing `Nothing` to `unsafeHead` will throw an error at
 -- | runtime.
 unsafeHead :: forall a. Array a -> a
-unsafeHead array = unsafeFromJust (head array)
+unsafeHead array = unsafePartial (fromJust (head array))
