@@ -12,7 +12,16 @@ to generate this file without the comments in this block.
 -}
 { name = "arrays-extra"
 , dependencies =
-  [ "arrays", "console", "effect", "maybe", "partial", "prelude" ]
+  [ "arrays"
+  , "console"
+  , "effect"
+  , "either"
+  , "foldable-traversable"
+  , "maybe"
+  , "partial"
+  , "prelude"
+  , "tuples"
+  ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
 }
