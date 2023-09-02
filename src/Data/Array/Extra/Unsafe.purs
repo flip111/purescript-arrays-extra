@@ -9,7 +9,7 @@ module Data.Array.Extra.Unsafe (
   ) where
 
 import Data.Array (head)
-import Data.Maybe (Maybe, fromJust, fromJust)
+import Data.Maybe (fromJust)
 import Partial.Unsafe (unsafePartial)
 
 -- | Delete the element at index `i` in an array
