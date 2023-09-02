@@ -5,7 +5,6 @@ module Data.Array.Extra.Unsafe (
   unsafeInsertAt,
   unsafeUpdateAt,
   unsafeModifyAt,
-  unsafeFromJust,
   unsafeHead
   ) where
 
@@ -52,12 +51,6 @@ unsafeModifyAt :: forall a. Partial => Int -> (a -> a) -> Array a -> Array a
 unsafeModifyAt = unsafeModifyAtImpl
 
 foreign import unsafeModifyAtImpl :: forall a. Int -> (a -> a) -> Array a -> Array a
-
--- | An unsafe function that extracts the value from the `Just` data
--- | constructor. Passing `Nothing` to `fromJust` will throw an error at
--- | runtime.
-unsafeFromJust :: forall a. Maybe a -> a
-unsafeFromJust x = unsafePartial (fromJust x)
 
 -- | Get the first element in an array. Passing `Nothing` to `unsafeHead` will throw an error at
 -- | runtime.
