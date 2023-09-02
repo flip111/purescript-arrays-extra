@@ -1,35 +1,11 @@
--- | This module defines functions that do something with an array based on a predicate.
+-- | Functions that insert an element when it can not be found in the array.
 
-module Data.Array.Extra.Find where
+module Data.Array.Extra.Insert where
 
-import Data.Array (cons, elem, findIndex, insertBy, snoc, unsafeIndex)
-import Data.Array.Extra.Unsafe (unsafeDeleteAt, unsafeModifyAt, unsafeUpdateAt)
+import Data.Array (cons, elem, findIndex, insertBy, snoc)
 import Data.Eq (class Eq)
-import Data.Functor (map)
 import Data.Maybe (Maybe(..))
 import Data.Ordering (Ordering)
-import Partial.Unsafe (unsafePartial)
-
--- | Find an element by a predicate and return it together with the array without the element.
--- |
--- | ```purescript
--- | extract (== 2) [1,2,3] == Just {found: 2, remaining: [1,3]}
--- | ```
-extract :: forall a. (a -> Boolean) -> Array a -> Maybe {found :: a, remaining :: Array a}
-extract predicate array = case findIndex predicate array of
-  Nothing -> Nothing
-  Just idx ->
-    let elem = unsafePartial (unsafeIndex array idx)
-        rest = unsafePartial (unsafeDeleteAt idx array)
-    in Just {found: elem, remaining: rest}
-
--- | Find an element by a predicate and return an array without that element when it was found.
--- |
--- | ```purescript
--- | deleteWith (== 2) [1,2,3] == Just [1,3]
--- | ```
-deleteWith :: forall a. (a -> Boolean) -> Array a -> Maybe (Array a)
-deleteWith pred array = map (\idx -> unsafePartial (unsafeDeleteAt idx array)) (findIndex pred array)
 
 -- | Append an element to the end of the array when it could not be found by the predicate.
 -- |
@@ -46,7 +22,7 @@ snocWith pred array x = case findIndex pred array of
 -- | ```purescript
 -- | snocWith [1,3] 2 == Just [1,3,2]
 -- | ```
-snocWith' :: forall a. Eq a => Array a -> a ->  Maybe (Array a)
+snocWith' :: forall a. Eq a => Array a -> a -> Maybe (Array a)
 snocWith' array x = 
   if elem x array then
     Nothing
@@ -96,19 +72,3 @@ insertByWith' comp x array =
     Nothing
   else
     Just (insertBy comp x array)
-
--- | Find an element by a predicate and return an array with the updated element when it was found
--- |
--- | ```purescript
--- | updateWith (== 2) 4 [1,2,3] == Just [1,4,3]
--- | ```
-updateWith :: forall a. (a -> Boolean) -> a -> Array a -> Maybe (Array a)
-updateWith pred a array = map (\idx -> unsafePartial (unsafeUpdateAt idx a array)) (findIndex pred array)
-
--- | Find an element by a predicate and return an array with the updated element when it was found
--- |
--- | ```purescript
--- | modifyWith (== 2) (* 3) [1,2,3] == Just [1,6,3]
--- | ```
-modifyWith :: forall a. (a -> Boolean) -> (a -> a) -> Array a -> Maybe (Array a)
-modifyWith pred modifier array = map (\idx -> unsafePartial (unsafeModifyAt idx modifier array)) (findIndex pred array)
