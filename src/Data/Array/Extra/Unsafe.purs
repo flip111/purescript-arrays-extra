@@ -4,8 +4,14 @@ module Data.Array.Extra.Unsafe (
   unsafeDeleteAt,
   unsafeInsertAt,
   unsafeUpdateAt,
-  unsafeModifyAt
+  unsafeModifyAt,
+  unsafeFromJust,
+  unsafeHead
   ) where
+
+import Data.Array (head)
+import Data.Maybe (Maybe, fromJust)
+import Partial.Unsafe (unsafePartial)
 
 -- | Delete the element at index `i` in an array
 -- |
@@ -46,3 +52,14 @@ unsafeModifyAt :: forall a. Partial => Int -> (a -> a) -> Array a -> Array a
 unsafeModifyAt = unsafeModifyAtImpl
 
 foreign import unsafeModifyAtImpl :: forall a. Int -> (a -> a) -> Array a -> Array a
+
+-- | An unsafe function that extracts the value from the `Just` data
+-- | constructor. Passing `Nothing` to `fromJust` will throw an error at
+-- | runtime.
+unsafeFromJust :: forall a. Maybe a -> a
+unsafeFromJust x = unsafePartial (fromJust x)
+
+-- | Get the first element in an array. Passing `Nothing` to `unsafeHead` will throw an error at
+-- | runtime.
+unsafeHead :: forall a. Array a -> a
+unsafeHead array = unsafeFromJust (head array)
