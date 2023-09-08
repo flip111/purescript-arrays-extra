@@ -10,6 +10,14 @@ export const unsafeInsertAtImpl = function (i) {
   };
 };
 
+export const unsafeInsertArrayImpl = function (i) {
+  return function (a) {
+    return function (l) {
+      return l.splice.apply(l, [i, 0].concat(a));
+    };
+  };
+};
+
 export const unsafeDeleteAtImpl = function (i) {
   return function (l) {
     var l1 = l.slice();

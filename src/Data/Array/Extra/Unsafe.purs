@@ -3,6 +3,7 @@
 module Data.Array.Extra.Unsafe (
   unsafeDeleteAt,
   unsafeInsertAt,
+  unsafeInsertArray,
   unsafeUpdateAt,
   unsafeModifyAt,
   unsafeHead
@@ -31,6 +32,16 @@ unsafeInsertAt :: forall a. Partial => Int -> a -> Array a -> Array a
 unsafeInsertAt = unsafeInsertAtImpl
 
 foreign import unsafeInsertAtImpl :: forall a. Int -> a -> Array a -> Array a
+
+-- | Insert an array into another array at the given position.
+-- |
+-- | ```purescript
+-- | unsafeInsertArray 2 [21,22] [1,2,3,4,5] == [1,2,21,22,3,4,5]
+-- | ```
+unsafeInsertArray :: forall a. Partial => Int -> Array a -> Array a -> Array a
+unsafeInsertArray = unsafeInsertArrayImpl
+
+foreign import unsafeInsertArrayImpl :: forall a. Int -> Array a -> Array a -> Array a
 
 -- | Overwrite the element at index `i` in an array
 -- |

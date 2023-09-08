@@ -2,10 +2,14 @@
 
 module Data.Array.Extra.Insert where
 
-import Data.Array (cons, elem, findIndex, insertBy, snoc)
+import Data.Array (cons, elem, findIndex, insertBy, snoc, length)
+import Data.Array.Extra.Unsafe (unsafeInsertArray)
 import Data.Eq (class Eq)
+import Data.HeytingAlgebra ((||))
 import Data.Maybe (Maybe(..))
+import Data.Ord ((<), (>=))
 import Data.Ordering (Ordering)
+import Partial.Unsafe (unsafePartial)
 
 -- | Append an element to the end of the array when it could not be found by the predicate.
 -- |
@@ -72,3 +76,12 @@ insertByWith' comp x array =
     Nothing
   else
     Just (insertBy comp x array)
+
+-- | Insert an array into another array at the given position.
+-- | Returns `Nothing` when the index is out of bounds.
+-- |
+-- | ```purescript
+-- | unsafeInsertArray 2 [21,22] [1,2,3,4,5] == [1,2,21,22,3,4,5]
+-- | ```
+insertArray :: forall a. Int -> Array a -> Array a -> Maybe (Array a)
+insertArray i xs ys = if i < 0 || i >= length ys then Nothing else Just (unsafePartial (unsafeInsertArray i xs ys))
