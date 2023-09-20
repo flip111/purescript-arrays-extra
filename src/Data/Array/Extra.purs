@@ -2,12 +2,20 @@
 
 module Data.Array.Extra where
 
-import Data.Array (deleteBy, foldl, foldr, sortBy, intersectBy, filter, unionBy, uncons, snoc, null)
+import Data.Array (deleteBy, foldl, foldr, sortBy, intersectBy, filter, unionBy, uncons, snoc, null, length, elem, all)
+import Data.Array.Extra.First (modifyOrSnoc)
 import Data.Either (Either(..))
+import Data.Eq (class Eq, (==), (/=))
 import Data.Function (on)
+import Data.Function.Uncurried (Fn2, runFn2)
+import Data.Map (Map)
+import Data.Map as Map
 import Data.Maybe (Maybe(..))
+import Data.Ord (class Ord)
 import Data.Ordering (Ordering)
 import Data.Semigroup ((<>))
+import Data.Semiring ((+))
+import Data.Tuple (Tuple(..))
 
 -- | Make a projection of an array then sort the original array by the projection
 -- |
@@ -28,10 +36,10 @@ differenceBy eq xs ys = foldr (deleteBy eq) xs ys
 -- | Try to make a projection from an array. Return an array with the projection and the original array with the elements removed.
 -- |
 -- | ```purescript
--- | partitionProjection (\x -> if x == "dog" then Just "cat" else Nothing) ["apple", "dog", "kiwi"] == { no: ["apple", "kiwi"], yes: ["cat"] }
+-- | partitionMaybe (\x -> if x == "dog" then Just "cat" else Nothing) ["apple", "dog", "kiwi"] == { no: ["apple", "kiwi"], yes: ["cat"] }
 -- | ```
-partitionProjection :: forall a b. (a -> Maybe b) -> Array a -> { no :: Array a, yes :: Array b }
-partitionProjection f xs = foldl go {yes: [], no: []} xs
+partitionMaybe :: forall a b. (a -> Maybe b) -> Array a -> { no :: Array a, yes :: Array b }
+partitionMaybe f xs = foldl go {yes: [], no: []} xs
   where go rec@{yes, no} x =
           case f x of
             Nothing -> rec {no  = no <> [x]}
@@ -40,14 +48,14 @@ partitionProjection f xs = foldl go {yes: [], no: []} xs
 -- | Find an element which could be projected into another value.
 -- |
 -- | ```purescript
--- | firstSuccessfulProjection (\x -> if x == 2 then Just "Found two" else Nothing) [1,2,3] == Just "Found Two"
+-- | firstMaybe (\x -> if x == 2 then Just "Found two" else Nothing) [1,2,3] == Just "Found Two"
 -- | ```
-firstSuccessfulProjection :: forall a b. (a -> Maybe b) -> Array a -> Maybe b
-firstSuccessfulProjection f arr = case uncons arr of
+firstMaybe :: forall a b. (a -> Maybe b) -> Array a -> Maybe b
+firstMaybe f arr = case uncons arr of
   Nothing             -> Nothing
   Just { head, tail } -> case f head of
     Just projection -> Just projection
-    Nothing -> firstSuccessfulProjection f tail
+    Nothing -> firstMaybe f tail
 
 -- | Like unionBy between array A and array B. With elements left out from B being included when they match the predicate.
 -- |
@@ -73,6 +81,8 @@ unionByWhen eq f array_a array_b =
     in unionBy eq n i
 
 -- | Map with a function that yields `Either`. Only succeeding when all elements where mapped to `Right`.
+-- | Hint: if you don't care about collecting all the Left's (error conditions) and you are looking for a function like
+-- | `forall a b c. (a -> Either c b) -> Array a -> Either c (Array b)` then use `traverse` from `Data.Traversable`.
 mapEither :: forall a b c. (a -> Either c b) -> Array a -> Either (Array c) (Array b)
 mapEither f foldable =
   let {lefts, rights} = foldl (g f) {lefts: [], rights: []} foldable
@@ -84,3 +94,38 @@ mapEither f foldable =
         g f2 {lefts, rights} elem = case f2 elem of
           Left l -> {lefts: snoc lefts l, rights}
           Right r -> {lefts, rights: snoc rights r}
+
+-- | Count the amount of times a value occurs in an array.
+-- | Requires an Ord instance for Map. This function should be faster than `occurrences`
+-- |
+-- | ```purescript
+-- | occurrencesMap ["A", "B", "B"] == Map.fromList [Tuple "A" 1, Tuple "B" 2]
+-- | ```
+occurrencesMap :: forall a. Ord a => Array a -> Map a Int
+occurrencesMap xs = foldl go Map.empty xs
+  where go acc x = Map.insertWith (\old _ -> old + 1) x 1 acc
+
+-- | Count the amount of times a value occurs in an array.
+-- | Mostly useful for when you can not define an Ord instance
+-- |
+-- | ```purescript
+-- | occurrences ["A", "B", "B"] == [Tuple "A" 1, Tuple "B" 2]
+-- | ```
+occurrences :: forall a. Eq a => Array a -> Array (Tuple a Int)
+occurrences xs = foldl go [] xs
+  where go acc x = modifyOrSnoc (\(Tuple k _) -> k == x) (\(Tuple k v) -> Tuple k (v + 1)) acc (Tuple x 1)
+
+-- | Checks if two arrays have exactly the same elements.
+-- | The order of elements does not matter.
+-- |
+-- | ```purescript
+-- | sameElements ["A", "B", "B"] ["B", "A", "B"] == true
+-- | sameElements ["A", "B", "B"] ["A", "B"] == false
+-- | ```
+sameElements :: forall a. Eq a => Array a -> Array a -> Boolean
+sameElements a b = if length a /= length b then false else
+  let occ_a = occurrences a
+      occ_b = occurrences b
+      go :: Tuple a Int -> Boolean
+      go x = x `elem` occ_b
+  in  all go occ_a
