@@ -16,7 +16,7 @@ to generate this file without the comments in this block.
   , "console"
   , "effect"
   , "either"
-  , "functions"
+  , "foldable-traversable"
   , "maybe"
   , "ordered-collections"
   , "partial"

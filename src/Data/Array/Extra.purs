@@ -2,12 +2,12 @@
 
 module Data.Array.Extra where
 
+import Control.Applicative (pure)
 import Data.Array (deleteBy, foldl, foldr, sortBy, intersectBy, filter, unionBy, uncons, snoc, null, length, elem, all)
 import Data.Array.Extra.First (modifyOrSnoc)
 import Data.Either (Either(..))
 import Data.Eq (class Eq, (==), (/=))
 import Data.Function (on)
-import Data.Function.Uncurried (Fn2, runFn2)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
@@ -15,7 +15,9 @@ import Data.Ord (class Ord)
 import Data.Ordering (Ordering)
 import Data.Semigroup ((<>))
 import Data.Semiring ((+))
+import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
+import Data.Monoid (mempty)
 
 -- | Make a projection of an array then sort the original array by the projection
 -- |
@@ -129,3 +131,33 @@ sameElements a b = if length a /= length b then false else
       go :: Tuple a Int -> Boolean
       go x = x `elem` occ_b
   in  all go occ_a
+
+-- | Map an array conditionally, only return the array when at least one element was mapped.
+-- | Elements that are not mapped will keep the old value.
+-- |
+-- | ```purescript
+-- | mapAny (\_ -> Nothing) [1,2,3] == Nothing
+-- | mapAny (\x -> if x == 2 then Just 99 else Nothing) [1,2,3] == Just [1,99,3]
+-- | ```
+mapAny :: forall a. (a -> Maybe a) -> Array a -> Maybe (Array a)
+mapAny f xs =
+  let go (Tuple acc replaced) x = case f x of
+          Nothing -> Tuple (acc <> pure x) replaced
+          Just y  -> Tuple (acc <> pure y) true
+
+      Tuple acc replaced = foldl go (Tuple mempty false) xs
+
+  in  if replaced then
+        Just acc
+      else
+        Nothing
+
+-- | Map an array conditionally, only return the array when all elements were mapped.
+-- | Note that this function is an alias for `traverse`. This is specific behavior for the implementation of `<*>` for `Applicative Maybe`.
+-- |
+-- | ```purescript
+-- | mapAll (\x -> if x == 2 then Just 99 else Nothing) [1,2,3] == Nothing
+-- | mapAll (\x -> Just (x * 2)) [1,2,3] == Just [2,4,6]
+-- | ```
+mapAll :: forall a b. (a -> Maybe b) -> Array a -> Maybe (Array b)
+mapAll = traverse
