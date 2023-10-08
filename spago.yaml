@@ -1,0 +1,17 @@
+package:
+  dependencies:
+  - arrays
+  - console
+  - effect
+  - either
+  - foldable-traversable
+  - maybe
+  - ordered-collections
+  - partial
+  - prelude
+  - tuples
+  name: arrays-extra
+workspace:
+  extra_packages: {}
+  package_set:
+    registry: 42.4.0
