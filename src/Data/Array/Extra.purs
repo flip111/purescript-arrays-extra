@@ -3,21 +3,24 @@
 module Data.Array.Extra where
 
 import Control.Applicative (pure)
-import Data.Array (deleteBy, foldl, foldr, sortBy, intersectBy, filter, unionBy, uncons, snoc, null, length, elem, all)
+import Data.Array (all, deleteBy, elem, filter, foldl, foldr, intersectBy, length, null, snoc, sortBy, unionBy)
 import Data.Array.Extra.First (modifyOrSnoc)
+import Data.Array.NonEmpty (NonEmptyArray)
+import Data.Array.NonEmpty as NEA
 import Data.Either (Either(..))
 import Data.Eq (class Eq, (==), (/=))
+import Data.Filterable (partitionMap)
 import Data.Function (on)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
+import Data.Monoid (mempty)
 import Data.Ord (class Ord)
 import Data.Ordering (Ordering)
 import Data.Semigroup ((<>))
 import Data.Semiring ((+))
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
-import Data.Monoid (mempty)
 
 -- | Make a projection of an array then sort the original array by the projection
 -- |
@@ -46,18 +49,6 @@ partitionMaybe f xs = foldl go {yes: [], no: []} xs
           case f x of
             Nothing -> rec {no  = no <> [x]}
             Just b  -> rec {yes = yes <> [b]}
-
--- | Find an element which could be projected into another value.
--- |
--- | ```purescript
--- | firstMaybe (\x -> if x == 2 then Just "Found two" else Nothing) [1,2,3] == Just "Found Two"
--- | ```
-firstMaybe :: forall a b. (a -> Maybe b) -> Array a -> Maybe b
-firstMaybe f arr = case uncons arr of
-  Nothing             -> Nothing
-  Just { head, tail } -> case f head of
-    Just projection -> Just projection
-    Nothing -> firstMaybe f tail
 
 -- | Like unionBy between array A and array B. With elements left out from B being included when they match the predicate.
 -- |
@@ -136,11 +127,11 @@ sameElements a b = if length a /= length b then false else
 -- | Elements that are not mapped will keep the old value.
 -- |
 -- | ```purescript
--- | mapAny (\_ -> Nothing) [1,2,3] == Nothing
--- | mapAny (\x -> if x == 2 then Just 99 else Nothing) [1,2,3] == Just [1,99,3]
+-- | mapMaybeAny (\_ -> Nothing) [1,2,3] == Nothing
+-- | mapMaybeAny (\x -> if x == 2 then Just 99 else Nothing) [1,2,3] == Just [1,99,3]
 -- | ```
-mapAny :: forall a. (a -> Maybe a) -> Array a -> Maybe (Array a)
-mapAny f xs =
+mapMaybeAny :: forall a. (a -> Maybe a) -> Array a -> Maybe (Array a)
+mapMaybeAny f xs =
   let go (Tuple acc replaced) x = case f x of
           Nothing -> Tuple (acc <> pure x) replaced
           Just y  -> Tuple (acc <> pure y) true
@@ -153,11 +144,51 @@ mapAny f xs =
         Nothing
 
 -- | Map an array conditionally, only return the array when all elements were mapped.
--- | Note that this function is an alias for `traverse`. This is specific behavior for the implementation of `<*>` for `Applicative Maybe`.
+-- | Note that this function is an alias for `traverse` from `Data.Traversable`. This is specific behavior for the implementation of `<*>` for `Applicative Maybe`.
 -- |
 -- | ```purescript
--- | mapAll (\x -> if x == 2 then Just 99 else Nothing) [1,2,3] == Nothing
--- | mapAll (\x -> Just (x * 2)) [1,2,3] == Just [2,4,6]
+-- | mapMaybeAll (\x -> if x == 2 then Just 99 else Nothing) [1,2,3] == Nothing
+-- | mapMaybeAll (\x -> Just (x * 2)) [1,2,3] == Just [2,4,6]
 -- | ```
-mapAll :: forall a b. (a -> Maybe b) -> Array a -> Maybe (Array b)
-mapAll = traverse
+mapMaybeAll :: forall a b. (a -> Maybe b) -> Array a -> Maybe (Array b)
+mapMaybeAll = traverse
+
+-- | Similar to group, adds the ability to group by a projection.
+-- | The projection is returned as the first argument of the Tuple.
+-- |
+-- | ```purescript
+-- | groupMaybe (\x -> Just $ if even x then "even" else "odd") [1,2,3] == [(Tuple "odd" [1,3]), (Tuple "even" [2])]
+-- | ```
+groupMaybe :: forall a b. Eq b => (a -> Maybe b) -> Array a -> Array (Tuple b (NonEmptyArray a))
+groupMaybe f xs =
+  let g :: Array (Tuple b (NonEmptyArray a)) -> a -> Array (Tuple b (NonEmptyArray a))
+      g acc x = case f x of
+        Nothing -> acc
+        -- modifyOrSnoc :: forall a. (a -> Boolean) -> (a -> a) -> Array a -> a -> Array a
+        Just v  -> modifyOrSnoc (\(Tuple acc_b _) -> acc_b == v) (\(Tuple acc_b nea) -> Tuple acc_b (NEA.snoc nea x)) acc (Tuple v (NEA.singleton x))
+  in  foldl g [] xs
+
+-- | Similar to groupMaybe, adds the ability to map over the thing being grouped.
+-- | Useful for removing data that was only there to do the grouping.
+-- |
+-- | ```purescript
+-- | groupMaybeMap (\x -> Just $ if even x then "even" else "odd") (*3) [1,2,3] == [(Tuple "odd" [3,9]), (Tuple "even" [6])]
+-- | groupMaybeMap f identity xs = groupMaybe f xs
+-- | ```
+groupMaybeMap :: forall a b c. Eq b => (a -> Maybe b) -> (a -> c) -> Array a -> Array (Tuple b (NonEmptyArray c))
+groupMaybeMap f g xs =
+  let h :: Array (Tuple b (NonEmptyArray c)) -> a -> Array (Tuple b (NonEmptyArray c))
+      h acc x = case f x of
+        Nothing -> acc
+        Just v  -> modifyOrSnoc (\(Tuple acc_b _) -> acc_b == v) (\(Tuple acc_b nea) -> Tuple acc_b (NEA.snoc nea (g x))) acc (Tuple v (NEA.singleton (g x)))
+  in  foldl h [] xs
+
+-- Partitions an array of Either into two arrays. All the Left elements are put, in order, into the left field of the output record. Similarly the Right elements are put into the right field of the output record.
+-- Note that this function is an alias for `partitionMap` from `Data.Filterable`.
+-- The function is included in this library for people who prefer this name for the function as they might be used to it from [haskell](https://hackage.haskell.org/package/base-4.19.0.0/docs/Data-Either.html#v:partitionEithers)
+--
+-- | ```purescript
+-- | partitionEithers (\a -> if a > 2 then Left a else Right a) [1,2,3,4] == {left: [1,2], right: [3,4]}
+-- | ```
+partitionEithers :: forall a l r. (a -> Either l r) -> Array a -> {left :: Array l, right :: Array r}
+partitionEithers = partitionMap

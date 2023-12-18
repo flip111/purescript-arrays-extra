@@ -14,12 +14,12 @@ import Partial.Unsafe (unsafePartial)
 -- | Append an element to the end of the array when it could not be found by the predicate.
 -- |
 -- | ```purescript
--- | snocWith (== 2) [1,3] 2 == Just [1,3,2]
+-- | snocWith (_ == 2) [1,3] 2 == Just [1,3,2]
 -- | ```
 snocWith :: forall a. (a -> Boolean) -> Array a -> a ->  Maybe (Array a)
-snocWith pred array x = case findIndex pred array of
+snocWith pred xs x = case findIndex pred xs of
   Just _  -> Nothing
-  Nothing -> Just (snoc array x)
+  Nothing -> Just (snoc xs x)
   
 -- | Append an element to the end of the array when it could not be found by the predicate.
 -- |
@@ -27,11 +27,11 @@ snocWith pred array x = case findIndex pred array of
 -- | snocWith [1,3] 2 == Just [1,3,2]
 -- | ```
 snocWith' :: forall a. Eq a => Array a -> a -> Maybe (Array a)
-snocWith' array x = 
-  if elem x array then
+snocWith' xs x = 
+  if elem x xs then
     Nothing
   else
-    Just (snoc array x)
+    Just (snoc xs x)
 
 -- | Find an element by a predicate and when it was not found return an array with the element pushed to the front.
 -- |
@@ -39,9 +39,9 @@ snocWith' array x =
 -- | consWith 2 [1,3] == Just [2,1,3]
 -- | ```
 consWith :: forall a. (a -> Boolean) -> a -> Array a ->  Maybe (Array a)
-consWith pred x array = case findIndex pred array of
+consWith pred x xs = case findIndex pred xs of
   Just _  -> Nothing
-  Nothing -> Just (cons x array)
+  Nothing -> Just (cons x xs)
 
 -- | Find an element by a predicate and when it was not found return an array with the element pushed to the front.
 -- |
@@ -49,21 +49,21 @@ consWith pred x array = case findIndex pred array of
 -- | consWith [1,3] 2 == Just [2,1,3]
 -- | ```
 consWith' :: forall a. Eq a => a -> Array a ->  Maybe (Array a)
-consWith' x array =
-  if elem x array then
+consWith' x xs =
+  if elem x xs then
     Nothing
   else
-    Just (cons x array)
+    Just (cons x xs)
 
 -- | Insert the element into a sorted array but only if the element can not be found by the predicate.
 -- |
 -- | ```purescript
--- | insertByWith (== 2) (\a b -> compare a b) 2 [1,3]  == Just [1,2,3]
+-- | insertByWith (_ == 2) (\a b -> compare a b) 2 [1,3]  == Just [1,2,3]
 -- | ```
 insertByWith :: forall a. (a -> Boolean) -> (a -> a -> Ordering) -> a -> Array a -> Maybe (Array a)
-insertByWith pred comp x array = case findIndex pred array of
+insertByWith pred comp x xs = case findIndex pred xs of
   Just _  -> Nothing
-  Nothing -> Just (insertBy comp x array)
+  Nothing -> Just (insertBy comp x xs)
 
 -- | Insert the element into a sorted array but only if the element didn't exist before.
 -- |
@@ -71,11 +71,11 @@ insertByWith pred comp x array = case findIndex pred array of
 -- | insertByWith (\a b -> compare a b) 2 [1,3]  == Just [1,2,3]
 -- | ```
 insertByWith' :: forall a. Eq a => (a -> a -> Ordering) -> a -> Array a -> Maybe (Array a)
-insertByWith' comp x array =
-  if elem x array then
+insertByWith' comp x xs =
+  if elem x xs then
     Nothing
   else
-    Just (insertBy comp x array)
+    Just (insertBy comp x xs)
 
 -- | Insert an array into another array at the given position.
 -- | Returns `Nothing` when the index is out of bounds.
