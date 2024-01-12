@@ -3,6 +3,7 @@
 module Data.Array.Extra where
 
 import Control.Applicative (pure)
+import Control.Semigroupoid ((<<<))
 import Data.Array (all, deleteBy, elem, filter, foldl, foldr, intersectBy, length, null, snoc, sortBy, unionBy)
 import Data.Array.Extra.First (modifyOrSnoc)
 import Data.Array.NonEmpty (NonEmptyArray)
@@ -11,24 +12,52 @@ import Data.Either (Either(..))
 import Data.Eq (class Eq, (==), (/=))
 import Data.Filterable (partitionMap)
 import Data.Function (on)
+import Data.Functor (map)
+import Data.List as List
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Monoid (mempty)
-import Data.Ord (class Ord)
+import Data.Ord (class Ord, comparing)
 import Data.Ordering (Ordering)
 import Data.Semigroup ((<>))
 import Data.Semiring ((+))
 import Data.Traversable (traverse)
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), fst, snd)
 
--- | Make a projection of an array then sort the original array by the projection
+-- | Sort a list by a projection.
 -- |
 -- | ```purescript
--- | sortWithBy (\x -> if x == "dog" then 2 else 1) compare ["apple", "dog", "kiwi"] = ["apple", "kiwi", "dog"]
+-- | sortOn (\x -> if x == "dog" then 2 else 1) ["apple", "dog", "kiwi"] = ["apple", "kiwi", "dog"]
 -- | ```
-sortWithBy :: forall a b. (a -> b) -> (b -> b -> Ordering) -> Array a -> Array a
-sortWithBy f comp = sortBy (comp `on` f)
+sortOn :: forall a b. Ord b => (a -> b) -> Array a -> Array a
+sortOn f = sortBy (comparing f)
+
+-- | Sort a list by a projection.
+-- | This version of sortOn uses the decorate-sort-undecorate paradigm or Schwartzian transform. Which means the projection for each entry will only be computed once at the cost of creating more data structures. You will have to benchmark your specific situation to find out whether sortOn or sortOn' is faster.
+-- |
+-- | ```purescript
+-- | sortOn' (\x -> if x == "dog" then 2 else 1) ["apple", "dog", "kiwi"] = ["apple", "kiwi", "dog"]
+-- | ```
+sortOn' :: forall a b. Ord b => (a -> b) -> Array a -> Array a
+sortOn' f =  map snd <<< sortBy (comparing fst) <<< map (\x -> let y = f x in Tuple y x)
+
+-- | Sort a list by a projection and order by a given comparison function.
+-- |
+-- | ```purescript
+-- | sortOnBy (\x -> if x == "dog" then 2 else 1) compare ["apple", "dog", "kiwi"] = ["apple", "kiwi", "dog"]
+-- | ```
+sortOnBy :: forall a b. (a -> b) -> (b -> b -> Ordering) -> Array a -> Array a
+sortOnBy f comp = sortBy (comp `on` f)
+
+-- | Sort a list by a projection and order by a given comparison function.
+-- | This version of sortOnBy uses the decorate-sort-undecorate paradigm or Schwartzian transform. Which means the projection for each entry will only be computed once at the cost of creating more data structures. You will have to benchmark your specific situation to find out whether sortOn or sortOn' is faster.
+-- |
+-- | ```purescript
+-- | sortOnBy' (\x -> if x == "dog" then 2 else 1) compare ["apple", "dog", "kiwi"] = ["apple", "kiwi", "dog"]
+-- | ```
+sortOnBy' :: forall a b. (a -> b) -> (b -> b -> Ordering) -> Array a -> Array a
+sortOnBy' f comp = map snd <<< sortBy (comp `on` fst) <<< map (\x -> let y = f x in Tuple y x)
 
 -- | Like `difference` but takes a comparison function.
 -- |
@@ -182,6 +211,21 @@ groupMaybeMap f g xs =
         Nothing -> acc
         Just v  -> modifyOrSnoc (\(Tuple acc_b _) -> acc_b == v) (\(Tuple acc_b nea) -> Tuple acc_b (NEA.snoc nea (g x))) acc (Tuple v (NEA.singleton (g x)))
   in  foldl h [] xs
+
+-- | Similar to groupAllBy but combines all duplicates into one element given a function
+-- |
+-- | ```purescript
+-- | let products = [{product: "bread", amount: 1}, {product: "cheese", amount: 2}, {product: "bread", amount: 3}]
+-- | in combineOrd (_ .product) (\a b -> {product: a.product, amount: a.amount + b.amount}) products == [{product: "bread", amount: 4}, {product: "cheese", amount: 2}]
+-- | ```
+combineOrd :: forall a b. Ord b => (a -> b) -> (a -> a -> a) -> Array a -> Array a
+combineOrd f g xs = List.toUnfoldable (Map.values (foldl h Map.empty xs))
+  where h :: Map b a -> a -> Map b a
+        h acc x = Map.alter k (f x) acc
+          where k :: Maybe a -> Maybe a
+                k Nothing  = Just x
+                k (Just y) = Just (g x y)
+-- maybe in the future f :: forall a b. Ord b => (a -> b) -> (a -> c -> c) -> Array a -> Array c can be added
 
 -- Partitions an array of Either into two arrays. All the Left elements are put, in order, into the left field of the output record. Similarly the Right elements are put into the right field of the output record.
 -- Note that this function is an alias for `partitionMap` from `Data.Filterable`.
