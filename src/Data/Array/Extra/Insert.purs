@@ -16,15 +16,15 @@ import Partial.Unsafe (unsafePartial)
 -- | ```purescript
 -- | snocWith (_ == 2) [1,3] 2 == Just [1,3,2]
 -- | ```
-snocWith :: forall a. (a -> Boolean) -> Array a -> a ->  Maybe (Array a)
+snocWith :: forall a. (a -> Boolean) -> Array a -> a -> Maybe (Array a)
 snocWith pred xs x = case findIndex pred xs of
   Just _  -> Nothing
   Nothing -> Just (snoc xs x)
   
--- | Append an element to the end of the array when it could not be found by the predicate.
+-- | Append an element to the end of the array when it could not be found.
 -- |
 -- | ```purescript
--- | snocWith [1,3] 2 == Just [1,3,2]
+-- | snocWith' [1,3] 2 == Just [1,3,2]
 -- | ```
 snocWith' :: forall a. Eq a => Array a -> a -> Maybe (Array a)
 snocWith' xs x = 
@@ -43,7 +43,7 @@ consWith pred x xs = case findIndex pred xs of
   Just _  -> Nothing
   Nothing -> Just (cons x xs)
 
--- | Find an element by a predicate and when it was not found return an array with the element pushed to the front.
+-- | Find an element and when it was not found return an array with the element pushed to the front.
 -- |
 -- | ```purescript
 -- | consWith [1,3] 2 == Just [2,1,3]

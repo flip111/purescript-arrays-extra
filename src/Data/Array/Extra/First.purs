@@ -4,6 +4,7 @@ module Data.Array.Extra.First where
 
 import Data.Array (findIndex, unsafeIndex, snoc, cons, take, insertAt, drop, uncons)
 import Data.Array.Extra.Unsafe (unsafeDeleteAt, unsafeModifyAt, unsafeUpdateAt, unsafeInsertArray)
+import Data.Eq (class Eq, (==))
 import Data.Functor (map)
 import Data.Maybe (Maybe(..))
 import Data.Semiring ((+))
@@ -22,21 +23,29 @@ partitionFirst f xs = case findIndex f xs of
         rest = unsafePartial (unsafeDeleteAt idx xs)
     in Just {yes: elem, no: rest}
 
+-- | Find an element and return an array without that element when it was found.
+-- |
+-- | ```purescript
+-- | delete' [1,2,3] 2 == Just [1,3]
+-- | ```
+delete :: forall a. Eq a => a -> Array a -> Maybe (Array a)
+delete x xs = map (\idx -> unsafePartial (unsafeDeleteAt idx xs)) (findIndex (\i -> i == x) xs)
+
 -- | Find an element by a predicate and return an array without that element when it was found.
 -- |
 -- | ```purescript
 -- | deleteWith (_ == 2) [1,2,3] == Just [1,3]
 -- | ```
-deleteFirstWith :: forall a. (a -> Boolean) -> Array a -> Maybe (Array a)
-deleteFirstWith f xs = map (\idx -> unsafePartial (unsafeDeleteAt idx xs)) (findIndex f xs)
+deleteWith :: forall a. (a -> Boolean) -> Array a -> Maybe (Array a)
+deleteWith f xs = map (\idx -> unsafePartial (unsafeDeleteAt idx xs)) (findIndex f xs)
 
 -- | Find an element by a predicate, replace it with another element and return the updated array when it was found
 -- |
 -- | ```purescript
 -- | updateWith (_ == 2) 4 [1,2,3] == Just [1,4,3]
 -- | ```
-updateFirstWith :: forall a. (a -> Boolean) -> a -> Array a -> Maybe (Array a)
-updateFirstWith f x xs = map (\idx -> unsafePartial (unsafeUpdateAt idx x xs)) (findIndex f xs)
+updateWith :: forall a. (a -> Boolean) -> a -> Array a -> Maybe (Array a)
+updateWith f x xs = map (\idx -> unsafePartial (unsafeUpdateAt idx x xs)) (findIndex f xs)
 
 -- | Find an element by a predicate and return an array with the element replaced by an array.
 -- |
@@ -51,8 +60,8 @@ updateFirstArrayWith f xs ys = map (\idx -> unsafePartial (unsafeInsertArray idx
 -- | ```purescript
 -- | modifyWith (_ == 2) (* 3) [1,2,3] == Just [1,6,3]
 -- | ```
-modifyFirstWith :: forall a. (a -> Boolean) -> (a -> a) -> Array a -> Maybe (Array a)
-modifyFirstWith f modifier xs = map (\idx -> unsafePartial (unsafeModifyAt idx modifier xs)) (findIndex f xs)
+modifyWith :: forall a. (a -> Boolean) -> (a -> a) -> Array a -> Maybe (Array a)
+modifyWith f modifier xs = map (\idx -> unsafePartial (unsafeModifyAt idx modifier xs)) (findIndex f xs)
 
 -- | Modify an element when it was found by the predicate or append a new element to the end of the array.
 -- |
