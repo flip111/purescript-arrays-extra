@@ -1,7 +1,8 @@
 module Data.Array.Extra.All where
 
 import Data.Array (filter, length, range, zip, foldl)
-import Data.Array.Extra.Unsafe (unsafeModifyAt, unsafeUpdateAt, unsafeInsertArray)
+import Data.Array.Extra.Unsafe (unsafeModifyAt, unsafeUpdateAt, unsafeInsertArray, unsafeDeleteAt)
+import Data.Eq (class Eq, (==))
 import Data.Functor (map)
 import Data.Tuple (Tuple(..), snd)
 import Partial.Unsafe (unsafePartial)
@@ -42,3 +43,24 @@ updateAllArrayWith f xs ys = foldl go ys (findIndices f ys)
 modifyAllWith :: forall a. (a -> Boolean) -> (a -> a) -> Array a -> Array a
 modifyAllWith f modifier xs = foldl go xs (findIndices f xs)
   where go arr idx = unsafePartial (unsafeModifyAt idx modifier arr)
+
+-- todo: delete :: forall a. Eq a => a -> Array a -> Maybe (Array a)
+
+-- | Find an element by a predicate and return an array without that element when it was found.
+-- |
+-- | ```purescript
+-- | deleteWith (_ == 2) [2,1,3,2] == Just [1,3]
+-- | ```
+deleteWith :: forall a. (a -> Boolean) -> Array a -> Array a
+deleteWith f xs = foldl (\ys idx -> unsafePartial (unsafeDeleteAt idx ys)) xs (findIndices f xs)
+
+-- | Like `difference` in `Data.Array` but removes all of the elements from the first array which have a match in the second array.
+-- |
+-- | ```purescript
+-- | difference [2, 1, 2] [2, 3] == [1,2] -- Data.Array
+-- | difference [2, 1, 2] [2, 3] == [1]   -- Data.Array.Extra.All
+-- | ```
+difference :: forall a. Eq a => Array a -> Array a -> Array a
+difference xs ys = foldl (\xss y -> deleteWith (\x -> x == y) xss) xs ys
+
+-- todo: delete, differenceBy

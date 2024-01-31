@@ -2,9 +2,11 @@
 
 module Data.Array.Extra.First where
 
-import Data.Array (findIndex, unsafeIndex, snoc, cons, take, insertAt, drop, uncons)
+import Data.Array (findIndex, unsafeIndex, snoc, cons, take, insertAt, drop, uncons, deleteBy)
+import Data.Array as Array
 import Data.Array.Extra.Unsafe (unsafeDeleteAt, unsafeModifyAt, unsafeUpdateAt, unsafeInsertArray)
 import Data.Eq (class Eq, (==))
+import Data.Foldable (foldr)
 import Data.Functor (map)
 import Data.Maybe (Maybe(..))
 import Data.Semiring ((+))
@@ -13,10 +15,10 @@ import Partial.Unsafe (unsafePartial)
 -- | Find an element by a predicate and return it together with the array without the element.
 -- |
 -- | ```purescript
--- | partitionFirst (_ == 2) [1,2,3] == Just {yes: 2, no: [1,3]}
+-- | pick (_ == 2) [1,2,3] == Just {yes: 2, no: [1,3]}
 -- | ```
-partitionFirst :: forall a. (a -> Boolean) -> Array a -> Maybe {yes :: a, no :: Array a}
-partitionFirst f xs = case findIndex f xs of
+pick :: forall a. (a -> Boolean) -> Array a -> Maybe {yes :: a, no :: Array a}
+pick f xs = case findIndex f xs of
   Nothing  -> Nothing
   Just idx ->
     let elem = unsafePartial (unsafeIndex xs idx)
@@ -26,7 +28,7 @@ partitionFirst f xs = case findIndex f xs of
 -- | Find an element and return an array without that element when it was found.
 -- |
 -- | ```purescript
--- | delete' [1,2,3] 2 == Just [1,3]
+-- | delete [2,1,3,2] 2 == Just [1,3,2]
 -- | ```
 delete :: forall a. Eq a => a -> Array a -> Maybe (Array a)
 delete x xs = map (\idx -> unsafePartial (unsafeDeleteAt idx xs)) (findIndex (\i -> i == x) xs)
@@ -34,7 +36,7 @@ delete x xs = map (\idx -> unsafePartial (unsafeDeleteAt idx xs)) (findIndex (\i
 -- | Find an element by a predicate and return an array without that element when it was found.
 -- |
 -- | ```purescript
--- | deleteWith (_ == 2) [1,2,3] == Just [1,3]
+-- | deleteWith (_ == 2) [2,1,3,2] == Just [1,3,2]
 -- | ```
 deleteWith :: forall a. (a -> Boolean) -> Array a -> Maybe (Array a)
 deleteWith f xs = map (\idx -> unsafePartial (unsafeDeleteAt idx xs)) (findIndex f xs)
@@ -150,3 +152,20 @@ findMaybe f xs = case uncons xs of
   Just { head, tail } -> case f head of
     Just projection -> Just projection
     Nothing         -> findMaybe f tail
+
+-- | Re-export of `difference` from `Data.Array`
+-- |
+-- | ```purescript
+-- | difference [2, 1] [2, 3] = [1]
+-- | ```
+difference :: forall a. Eq a => Array a -> Array a -> Array a
+difference = Array.difference
+
+-- | Like `difference` but takes a comparison function.
+-- | For each element in the second list, one element in the first list will be removed if the predicate matches.
+-- |
+-- | ```purescript
+-- | differenceBy (\a b -> toLower a == toLower b) ["apple", "dog"] ["KIWI", "DOG"] == ["apple"]
+-- | ```
+differenceBy :: forall a. (a -> a -> Boolean) -> Array a -> Array a -> Array a
+differenceBy eq xs ys = foldr (deleteBy eq) xs ys

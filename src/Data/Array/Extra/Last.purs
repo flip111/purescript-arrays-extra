@@ -13,10 +13,10 @@ import Partial.Unsafe (unsafePartial)
 -- | Find an element by a predicate and return it together with the array without the element.
 -- |
 -- | ```purescript
--- | partitionLast (_ == 2) [1,2,3] == Just {yes: 2, no: [1,3]}
+-- | pick (_ == 2) [1,2,3] == Just {yes: 2, no: [1,3]}
 -- | ```
-partitionLast :: forall a. (a -> Boolean) -> Array a -> Maybe {yes :: a, no :: Array a}
-partitionLast f xs = case findLastIndex f xs of
+pick :: forall a. (a -> Boolean) -> Array a -> Maybe {yes :: a, no :: Array a}
+pick f xs = case findLastIndex f xs of
   Nothing -> Nothing
   Just idx ->
     let elem = unsafePartial (unsafeIndex xs idx)
@@ -26,7 +26,7 @@ partitionLast f xs = case findLastIndex f xs of
 -- | Find an element and return an array without that element when it was found.
 -- |
 -- | ```purescript
--- | delete' [1,2,3] 2 == Just [1,3]
+-- | delete [2,1,3,2] 2 == Just [2,1,3]
 -- | ```
 delete :: forall a. Eq a => a -> Array a -> Maybe (Array a)
 delete x xs = map (\idx -> unsafePartial (unsafeDeleteAt idx xs)) (findLastIndex (\i -> i == x) xs)
@@ -34,7 +34,7 @@ delete x xs = map (\idx -> unsafePartial (unsafeDeleteAt idx xs)) (findLastIndex
 -- | Find an element by a predicate and return an array without that element when it was found.
 -- |
 -- | ```purescript
--- | deleteWith (_ == 2) [1,2,3] == Just [1,3]
+-- | deleteWith (_ == 2) [2,1,3,2] == Just [2,1,3]
 -- | ```
 deleteWith :: forall a. (a -> Boolean) -> Array a -> Maybe (Array a)
 deleteWith f xs = map (\idx -> unsafePartial (unsafeDeleteAt idx xs)) (findLastIndex f xs)
@@ -150,3 +150,5 @@ findMaybe f xs = case unsnoc xs of
   Just { init, last } -> case f last of
     Just projection -> Just projection
     Nothing         -> findMaybe f init
+
+-- todo: difference

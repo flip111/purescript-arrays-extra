@@ -8,11 +8,8 @@ module Data.Array.Extra
   , sortOnBy'
   , sortOnByMaybe
   , sortOnByMaybe'
-  , differenceBy
   , partitionEithers
-  , unionByWhen
   , combinations
-  , zipIndex
   , interleave
   , module Data.Foldable.Extra
   , module Data.Semigroup.Foldable.Extra
@@ -20,7 +17,7 @@ module Data.Array.Extra
   ) where
 
 import Control.Semigroupoid ((<<<))
-import Data.Array (catMaybes, cons, deleteBy, filter, foldr, intersectBy, length, range, sortBy, uncons, unionBy, zipWith)
+import Data.Array (catMaybes, cons, length, sortBy, uncons)
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty as NEA
 import Data.Either (Either)
@@ -122,14 +119,6 @@ sortOnByMaybe' f comp xs =
       g (Just a) (Just b) = comp a b
   in  sortOnBy' f g xs
 
--- | Like `difference` but takes a comparison function.
--- |
--- | ```purescript
--- | differenceBy (\a b -> toLower a == toLower b) ["apple", "dog"] ["KIWI", "DOG"] == ["KIWI"]
--- | ```
-differenceBy :: forall a. (a -> a -> Boolean) -> Array a -> Array a -> Array a
-differenceBy eq xs ys = foldr (deleteBy eq) xs ys
-
 -- | Partitions an array of Either into two arrays. All the Left elements are put, in order, into the left field of the output record. Similarly the Right elements are put into the right field of the output record.
 -- | Note that this function is an alias for `partitionMap` from `Data.Filterable`.
 -- | The function is included in this library for people who prefer this name for the function as they might be used to it from [haskell](https://hackage.haskell.org/package/base-4.19.0.0/docs/Data-Either.html#v:partitionEithers)
@@ -140,28 +129,28 @@ differenceBy eq xs ys = foldr (deleteBy eq) xs ys
 partitionEithers :: forall a l r. (a -> Either l r) -> Array a -> {left :: Array l, right :: Array r}
 partitionEithers = partitionMap
 
--- | Like unionBy between array A and array B. With elements left out from B being included when they match the predicate.
--- |
--- | Useful for updating matching elements and at the same time inserting new ones that match the insert criteria
--- |
--- | ```purescript
--- | unionByWhen
--- |   (\a b -> a.id == b.id)
--- |   (\{t} -> not $ null t)
--- |   [{id: 1, t: "old"}, {id: 2, t: "old"}]
--- |   [{id: 2, t: "new"}, {id: 3, t: ""}, {id: 4, t: "new"}]
--- |     = [{id: 1, t: "old"}, {id: 2, t: "new"}, {id: 4, t: "new"}]
--- | ```
--- |
--- | Truth table
--- |          | in A   | not in A    |
--- | in B     | update | insert-when |
--- | not in B | keep   | n/a         |
-unionByWhen :: forall a. (a -> a -> Boolean) -> (a -> Boolean) -> Array a -> Array a -> Array a
-unionByWhen eq f array_a array_b =
-    let i = intersectBy eq array_a array_b
-        n = filter f (differenceBy eq array_a array_b)
-    in unionBy eq n i
+-- -- | Like unionBy between array A and array B. With elements left out from B being included when they match the predicate.
+-- -- |
+-- -- | Useful for updating matching elements and at the same time inserting new ones that match the insert criteria
+-- -- |
+-- -- | ```purescript
+-- -- | unionByWhen
+-- -- |   (\a b -> a.id == b.id)
+-- -- |   (\{t} -> not $ null t)
+-- -- |   [{id: 1, t: "old"}, {id: 2, t: "old"}]
+-- -- |   [{id: 2, t: "new"}, {id: 3, t: ""}, {id: 4, t: "new"}]
+-- -- |     = [{id: 1, t: "old"}, {id: 2, t: "new"}, {id: 4, t: "new"}]
+-- -- | ```
+-- -- |
+-- -- | Truth table
+-- -- |          | in A   | not in A    |
+-- -- | in B     | update | insert-when |
+-- -- | not in B | keep   | n/a         |
+-- unionByWhen :: forall a. (a -> a -> Boolean) -> (a -> Boolean) -> Array a -> Array a -> Array a
+-- unionByWhen eq f array_a array_b =
+--     let i = intersectBy eq array_a array_b
+--         n = filter f (differenceBy eq array_a array_b)
+--     in unionBy eq n i
 
 -- | Get all combinations when drawing n elements from an array.
 -- | n must be greater than 0 and not greater than the length of the array otherwise this function returns `Nothing`
@@ -181,14 +170,6 @@ combinations n xs =
       else
         Just (map (\x -> unsafePartial (fromJust (NEA.fromArray x))) (f n xs))
 
--- | Zip an array together with an index starting at 0.
--- |
--- | ```purescript
--- | zipIndex ["a", "b"] == [Tuple 0 "a", Tuple 1 "b"]
--- | ```
-zipIndex :: forall a. Array a -> Array (Tuple Int a)
-zipIndex xs = zipWith Tuple (range 0 (length xs)) xs
-
 -- | Takes an element from each array in turn to produce a new array.
 -- |
 -- | ```purescript
@@ -203,3 +184,8 @@ interleave xss =
         let heads_tails = catMaybes (map uncons xss')
         in  f (Tuple (map (_.tail) heads_tails) (map (_.head) heads_tails <> acc))
   in  snd (f (Tuple xss []))
+
+
+
+-- zipOn :: forall a b c d. (a -> Maybe d) (b -> Maybe d) (a -> b -> c) -> Array a -> Array b -> Array c
+-- zipOn f_a f_b c xs ys -- start searching the smallest array first

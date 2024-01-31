@@ -53,7 +53,7 @@ workspace:
         - unsafe-coerce
   package_set:
     address:
-      registry: 48.5.0
+      registry: 49.0.0
     compiler: ">=0.15.14 <0.16.0"
     content:
       abc-parser: 2.0.1
@@ -81,7 +81,7 @@ workspace:
       arraybuffer-builder: 3.1.0
       arraybuffer-types: 3.0.2
       arrays: 7.3.0
-      arrays-extra: 0.5.1
+      arrays-extra: 0.6.0
       arrays-zipper: 2.0.1
       ask: 1.0.0
       assert: 6.0.0
@@ -107,6 +107,7 @@ workspace:
       chameleon-transformers: 1.0.0
       channel: 1.0.0
       checked-exceptions: 3.1.1
+      choku: 0.2.2
       classless: 0.1.1
       classless-arbitrary: 0.1.1
       classless-decode-json: 0.1.1
@@ -153,7 +154,7 @@ workspace:
       elmish-html: 0.8.2
       elmish-testing-library: 0.3.2
       email-validate: 7.0.0
-      encoding: 0.0.8
+      encoding: 0.0.9
       enums: 6.0.1
       env-names: 0.3.4
       error: 2.0.0
@@ -178,7 +179,7 @@ workspace:
       float32: 2.0.0
       fmt: 0.2.1
       foldable-traversable: 6.0.0
-      foldable-traversable-extra: 0.0.5
+      foldable-traversable-extra: 0.0.6
       foreign: 7.0.0
       foreign-object: 4.1.0
       foreign-readwrite: 3.4.0
@@ -222,7 +223,7 @@ workspace:
       halogen-typewriter: 1.0.4
       halogen-vdom: 8.0.0
       halogen-vdom-string-renderer: 0.5.0
-      halogen-xterm: 1.0.0
+      halogen-xterm: 2.0.0
       heckin: 2.0.1
       heterogeneous: 0.6.0
       homogeneous: 0.4.0
@@ -265,6 +266,7 @@ workspace:
       lazy-joe: 1.0.0
       lcg: 4.0.0
       leibniz: 5.0.0
+      leveldb: 1.0.1
       liminal: 1.0.1
       linalg: 6.0.0
       lists: 7.0.0
@@ -368,6 +370,7 @@ workspace:
       protobuf: 4.3.0
       psa-utils: 8.0.0
       psci-support: 6.0.0
+      punycode: 1.0.0
       qualified-do: 2.2.0
       quantities: 12.2.0
       quickcheck: 8.0.1
@@ -651,8 +654,8 @@ packages:
       - tuples
   foldable-traversable-extra:
     type: registry
-    version: 0.0.5
-    integrity: sha256-v+znyPmslaotc0fmeW/Gb98VrDEmLCKuKr3UjgSWXW4=
+    version: 0.0.6
+    integrity: sha256-S4+D9xs+lLO7p9+Y4M2XYHafaHlciY1jpGqCGmwfZdc=
     dependencies:
       - arrays
       - either
