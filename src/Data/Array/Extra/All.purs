@@ -44,7 +44,13 @@ modifyAllWith :: forall a. (a -> Boolean) -> (a -> a) -> Array a -> Array a
 modifyAllWith f modifier xs = foldl go xs (findIndices f xs)
   where go arr idx = unsafePartial (unsafeModifyAt idx modifier arr)
 
--- todo: delete :: forall a. Eq a => a -> Array a -> Maybe (Array a)
+-- | Find an element and return an array without that element when it was found.
+-- |
+-- | ```purescript
+-- | delete [2,1,3,2] 2 == Just [1,3,2]
+-- | ```
+delete :: forall a. Eq a => a -> Array a -> Array a
+delete x xs = foldl (\ys idx -> unsafePartial (unsafeDeleteAt idx ys)) xs (findIndices (\i -> i == x) xs)
 
 -- | Find an element by a predicate and return an array without that element when it was found.
 -- |
@@ -54,7 +60,7 @@ modifyAllWith f modifier xs = foldl go xs (findIndices f xs)
 deleteWith :: forall a. (a -> Boolean) -> Array a -> Array a
 deleteWith f xs = foldl (\ys idx -> unsafePartial (unsafeDeleteAt idx ys)) xs (findIndices f xs)
 
--- | Like `difference` in `Data.Array` but removes all of the elements from the first array which have a match in the second array.
+-- | Like `difference` in `Data.Array` but removes all (not just one) of the elements from the first array which have a match in the second array.
 -- |
 -- | ```purescript
 -- | difference [2, 1, 2] [2, 3] == [1,2] -- Data.Array
@@ -63,4 +69,4 @@ deleteWith f xs = foldl (\ys idx -> unsafePartial (unsafeDeleteAt idx ys)) xs (f
 difference :: forall a. Eq a => Array a -> Array a -> Array a
 difference xs ys = foldl (\xss y -> deleteWith (\x -> x == y) xss) xs ys
 
--- todo: delete, differenceBy
+-- todo: differenceBy

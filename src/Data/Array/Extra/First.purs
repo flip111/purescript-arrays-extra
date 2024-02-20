@@ -52,10 +52,10 @@ updateWith f x xs = map (\idx -> unsafePartial (unsafeUpdateAt idx x xs)) (findI
 -- | Find an element by a predicate and return an array with the element replaced by an array.
 -- |
 -- | ```purescript
--- | updateFirstArrayWith (_ == 2) [21,22] [1,2,3,4,5] == Just [1,2,21,22,3,4,5]
+-- | updateArrayWith (_ == 2) [21,22] [1,2,3,4,5] == Just [1,2,21,22,3,4,5]
 -- | ```
-updateFirstArrayWith :: forall a. Partial => (a -> Boolean) -> Array a -> Array a -> Maybe (Array a)
-updateFirstArrayWith f xs ys = map (\idx -> unsafePartial (unsafeInsertArray idx xs ys)) (findIndex f ys)
+updateArrayWith :: forall a. Partial => (a -> Boolean) -> Array a -> Array a -> Maybe (Array a)
+updateArrayWith f xs ys = map (\idx -> unsafePartial (unsafeInsertArray idx xs ys)) (findIndex f ys)
 
 -- | Find an element by a predicate, apply a function to it and return the updated array when it was found
 -- |

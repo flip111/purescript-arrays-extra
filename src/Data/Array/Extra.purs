@@ -11,19 +11,24 @@ module Data.Array.Extra
   , partitionEithers
   , combinations
   , interleave
+  , exactlyOne
+  , maybeToArray
   , module Data.Foldable.Extra
   , module Data.Semigroup.Foldable.Extra
   , module Data.Traversable.Extra
   ) where
 
+import Data.Foldable.Extra
+import Data.Semigroup.Foldable.Extra
+import Data.Traversable.Extra
+
 import Control.Semigroupoid ((<<<))
-import Data.Array (catMaybes, cons, length, sortBy, uncons)
+import Data.Array (catMaybes, cons, head, length, sortBy, uncons)
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty as NEA
 import Data.Either (Either)
 import Data.Filterable (partitionMap)
 import Data.Foldable (fold)
-import Data.Foldable.Extra
 import Data.Function (on)
 import Data.Functor (map)
 import Data.HeytingAlgebra ((||))
@@ -32,8 +37,6 @@ import Data.Ord (class Ord, comparing, (<), (>))
 import Data.Ordering (Ordering(..))
 import Data.Ring ((-))
 import Data.Semigroup ((<>))
-import Data.Semigroup.Foldable.Extra
-import Data.Traversable.Extra
 import Data.Tuple (Tuple(..), fst, snd)
 import Partial.Unsafe (unsafePartial)
 
@@ -185,7 +188,31 @@ interleave xss =
         in  f (Tuple (map (_.tail) heads_tails) (map (_.head) heads_tails <> acc))
   in  snd (f (Tuple xss []))
 
+-- | When the array has only one element, return this element.
+-- | This function is the opposite from `singleton`.
+-- |
+-- | ```purescript
+-- | exactlyOne [1] == Just 1
+-- | exactlyOne [1,2] == Nothing
+-- | ```
+exactlyOne :: forall a. Array a -> Maybe a
+exactlyOne xs = case length xs of
+  1 -> head xs
+  _ -> Nothing
 
+-- | Convert a Maybe to an Array.
+-- | This function is similar to `Data.Foldable.fromMaybe`. It named differently to avoid confusion with another `fromMaybe function`.
+-- |
+-- | * `Data.Maybe.fromMaybe :: forall a. a -> Maybe a -> a` Takes a default value
+-- | * `Data.Unfoldable.fromMaybe :: forall f a. Unfoldable f => Maybe a -> f a` Does not take a default valut
+-- |
+-- | ```purescript
+-- | exactlyOne [1] == Just 1
+-- | exactlyOne [1,2] == Nothing
+-- | ```
+maybeToArray :: forall a. Maybe a -> Array a
+maybeToArray Nothing      = []
+maybeToArray (Just value) = [value]
 
 -- zipOn :: forall a b c d. (a -> Maybe d) (b -> Maybe d) (a -> b -> c) -> Array a -> Array b -> Array c
 -- zipOn f_a f_b c xs ys -- start searching the smallest array first
