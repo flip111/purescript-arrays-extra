@@ -23,15 +23,17 @@ import Data.Semigroup.Foldable.Extra
 import Data.Traversable.Extra
 
 import Control.Semigroupoid ((<<<))
-import Data.Array (catMaybes, cons, head, length, sortBy, uncons)
+import Data.Array (catMaybes, cons, head, length, sortBy, uncons, findIndex)
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty as NEA
 import Data.Either (Either)
+import Data.Eq (class Eq, (==))
 import Data.Filterable (partitionMap)
 import Data.Foldable (fold)
 import Data.Function (on)
 import Data.Functor (map)
 import Data.HeytingAlgebra ((||))
+import Data.Map as Map
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Ord (class Ord, comparing, (<), (>))
 import Data.Ordering (Ordering(..))
@@ -56,7 +58,6 @@ import Partial.Unsafe (unsafePartial)
 -- | ```
 sortByMultiple :: forall a. Array (a -> a -> Ordering) -> Array a -> Array a
 sortByMultiple comps xs = sortBy (fold comps) xs
-
 
 -- | Sort a list by a projection.
 -- |
@@ -207,12 +208,41 @@ exactlyOne xs = case length xs of
 -- | * `Data.Unfoldable.fromMaybe :: forall f a. Unfoldable f => Maybe a -> f a` Does not take a default valut
 -- |
 -- | ```purescript
--- | exactlyOne [1] == Just 1
--- | exactlyOne [1,2] == Nothing
+-- | maybeToArray Nothing == []
+-- | maybeToArray (Just 2) == [2]
 -- | ```
 maybeToArray :: forall a. Maybe a -> Array a
 maybeToArray Nothing      = []
 maybeToArray (Just value) = [value]
+
+-- | Given two arrays, sort the second one by the order of the first one
+-- | The elements of each array will be compared to each other with their own projection functions.
+-- | Elements in the second array not found in the first one will be put at the end
+-- |
+-- | ```purescript
+-- | orderByArray identity _.id [2,3,1] [{id: 1, name: "Sara"}, {id: 2, name: "John"}, {id: 3, name: "Miranda"}]
+-- |   == [{id: 2, name: "John"}, {id: 3, name: "Miranda"}, {id: 1, name: "Sara"}]
+-- | ```
+orderByArray :: forall x y a. Eq a => (x -> a) -> (y -> a) -> Array x -> Array y -> Array y
+orderByArray proj_x proj_y xs ys =
+  let findIndexY y = findIndex (\x -> proj_x x == proj_y y) xs
+      compareIndices y1 y2 =
+        case Tuple (findIndexY y1) (findIndexY y2) of
+          Tuple (Just i1) (Just i2) -> compare i1 i2
+          Tuple (Just _)  Nothing   -> LT
+          Tuple Nothing   (Just _)  -> GT
+          Tuple Nothing   Nothing   -> EQ
+  in  sortBy compareIndices ys
+
+-- | Given two arrays, sort the second one by the order of the first one
+-- | The elements of each array will be compared to each other with their own projection functions.
+-- | Elements in the second array not found in the first one will be put at the end
+-- |
+-- | Same as `orderByArray` but potentially faster due to using a Map internally. You will have to benchmark your specific situation to find out whether `orderByArray` or `orderByArrayOrd'` is faster.
+orderByArrayOrd :: forall x y a. Ord a => (x -> a) -> (y -> a) -> Array x -> Array y -> Array y
+orderByArrayOrd proj_x proj_y xs ys =
+  let indexMap = Map.fromFoldable (mapWithIndex (\i x -> Tuple (proj_x x) i) xs)
+  in  sortBy (comparing (\y -> fromMaybe (length xs) $ Map.lookup (proj_y y) indexMap)) ys
 
 -- zipOn :: forall a b c d. (a -> Maybe d) (b -> Maybe d) (a -> b -> c) -> Array a -> Array b -> Array c
 -- zipOn f_a f_b c xs ys -- start searching the smallest array first

@@ -68,5 +68,6 @@ deleteWith f xs = foldl (\ys idx -> unsafePartial (unsafeDeleteAt idx ys)) xs (f
 -- | ```
 difference :: forall a. Eq a => Array a -> Array a -> Array a
 difference xs ys = foldl (\xss y -> deleteWith (\x -> x == y) xss) xs ys
+-- todo: using Set is probably faster (see haskell code)
 
 -- todo: differenceBy
