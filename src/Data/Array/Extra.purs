@@ -18,27 +18,20 @@ module Data.Array.Extra
   , module Data.Traversable.Extra
   ) where
 
-import Data.Foldable.Extra
-import Data.Semigroup.Foldable.Extra
-import Data.Traversable.Extra
+import Data.Foldable.Extra (allPredicate, anyPredicate, groupMaybe, groupMaybeMap, mapEither, mapMaybeAny, occurrences, occurrencesMap, partitionMaybe, sameElements)
+import Data.Semigroup.Foldable.Extra (mapAny)
+import Data.Traversable.Extra (mapAll, mapMaybeWrite, mapMaybeWriteModify, mapModify)
+import Prelude
 
-import Control.Semigroupoid ((<<<))
-import Data.Array (catMaybes, cons, head, length, sortBy, uncons, findIndex)
+import Data.Array (catMaybes, cons, findIndex, head, length, mapWithIndex, sortBy, uncons)
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty as NEA
 import Data.Either (Either)
-import Data.Eq (class Eq, (==))
 import Data.Filterable (partitionMap)
 import Data.Foldable (fold)
 import Data.Function (on)
-import Data.Functor (map)
-import Data.HeytingAlgebra ((||))
 import Data.Map as Map
-import Data.Maybe (Maybe(..), fromJust)
-import Data.Ord (class Ord, comparing, (<), (>))
-import Data.Ordering (Ordering(..))
-import Data.Ring ((-))
-import Data.Semigroup ((<>))
+import Data.Maybe (Maybe(..), fromJust, fromMaybe)
 import Data.Tuple (Tuple(..), fst, snd)
 import Partial.Unsafe (unsafePartial)
 
