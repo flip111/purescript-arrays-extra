@@ -24,7 +24,8 @@ findIndices f xs = map snd (filter (\(Tuple x _) -> f x) (zip xs (range 0 (lengt
 -- | ```
 updateAllWith :: forall a. (a -> Boolean) -> a -> Array a -> Array a
 updateAllWith f a xs = foldl go xs (findIndices f xs)
-  where go arr idx = unsafePartial (unsafeUpdateAt idx a arr)
+  where
+  go arr idx = unsafePartial (unsafeUpdateAt idx a arr)
 
 -- | Find an element by a predicate and return an array with the element replaced by an array.
 -- |
@@ -33,7 +34,8 @@ updateAllWith f a xs = foldl go xs (findIndices f xs)
 -- | ```
 updateAllArrayWith :: forall a. Partial => (a -> Boolean) -> Array a -> Array a -> Array a
 updateAllArrayWith f xs ys = foldl go ys (findIndices f ys)
-  where go arr idx = unsafePartial (unsafeInsertArray idx xs arr)
+  where
+  go arr idx = unsafePartial (unsafeInsertArray idx xs arr)
 
 -- | Find all elements matching a predicate and modify each element found.
 -- |
@@ -42,7 +44,8 @@ updateAllArrayWith f xs ys = foldl go ys (findIndices f ys)
 -- | ```
 modifyAllWith :: forall a. (a -> Boolean) -> (a -> a) -> Array a -> Array a
 modifyAllWith f modifier xs = foldl go xs (findIndices f xs)
-  where go arr idx = unsafePartial (unsafeModifyAt idx modifier arr)
+  where
+  go arr idx = unsafePartial (unsafeModifyAt idx modifier arr)
 
 -- | Find an element and return an array without that element when it was found.
 -- |

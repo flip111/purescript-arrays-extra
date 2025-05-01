@@ -1,12 +1,12 @@
 -- | Unsafe but faster functions due to no out of bounds checking.
 
-module Data.Array.Extra.Unsafe (
-  unsafeDeleteAt,
-  unsafeInsertAt,
-  unsafeInsertArray,
-  unsafeUpdateAt,
-  unsafeModifyAt,
-  unsafeHead
+module Data.Array.Extra.Unsafe
+  ( unsafeDeleteAt
+  , unsafeInsertAt
+  , unsafeInsertArray
+  , unsafeUpdateAt
+  , unsafeModifyAt
+  , unsafeHead
   ) where
 
 import Data.Array (head)
