@@ -13,6 +13,8 @@ module Data.Array.Extra
   , interleave
   , exactlyOne
   , maybeToArray
+  , orderByArray
+  , orderByArrayOrd
   , module Data.Foldable.Extra
   , module Data.Semigroup.Foldable.Extra
   , module Data.Traversable.Extra
