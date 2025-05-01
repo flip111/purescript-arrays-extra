@@ -15,13 +15,15 @@ import Partial.Unsafe (unsafePartial)
 -- | ```purescript
 -- | pick (_ == 2) [1,2,3] == Just {yes: 2, no: [1,3]}
 -- | ```
-pick :: forall a. (a -> Boolean) -> Array a -> Maybe {yes :: a, no :: Array a}
+pick :: forall a. (a -> Boolean) -> Array a -> Maybe { yes :: a, no :: Array a }
 pick f xs = case findLastIndex f xs of
   Nothing -> Nothing
   Just idx ->
-    let elem = unsafePartial (unsafeIndex xs idx)
-        rest = unsafePartial (unsafeDeleteAt idx xs)
-    in Just {yes: elem, no: rest}
+    let
+      elem = unsafePartial (unsafeIndex xs idx)
+      rest = unsafePartial (unsafeDeleteAt idx xs)
+    in
+      Just { yes: elem, no: rest }
 
 -- | Find an element and return an array without that element when it was found.
 -- |
@@ -71,7 +73,7 @@ modifyWith f modifier xs = map (\idx -> unsafePartial (unsafeModifyAt idx modifi
 -- | ```
 modifyOrSnoc :: forall a. (a -> Boolean) -> (a -> a) -> Array a -> a -> Array a
 modifyOrSnoc f modifier xs x = case findLastIndex f xs of
-  Nothing  -> snoc xs x
+  Nothing -> snoc xs x
   Just idx -> unsafePartial (unsafeModifyAt idx modifier xs)
 
 -- | Modify an element when it was found by the predicate or push a new element to the front of the array.
@@ -82,7 +84,7 @@ modifyOrSnoc f modifier xs x = case findLastIndex f xs of
 -- | ```
 modifyOrCons :: forall a. (a -> Boolean) -> (a -> a) -> a -> Array a -> Array a
 modifyOrCons f modifier x xs = case findLastIndex f xs of
-  Nothing  -> cons x xs
+  Nothing -> cons x xs
   Just idx -> unsafePartial (unsafeModifyAt idx modifier xs)
 
 -- | Update an element when it was found by the predicate or append a new element to the end of the array.
@@ -93,7 +95,7 @@ modifyOrCons f modifier x xs = case findLastIndex f xs of
 -- | ```
 updateOrSnoc :: forall a. (a -> Boolean) -> Array a -> a -> Array a
 updateOrSnoc f xs x = case findLastIndex f xs of
-  Nothing  -> snoc xs x
+  Nothing -> snoc xs x
   Just idx -> unsafePartial (unsafeUpdateAt idx x xs)
 
 -- | Update an element when it was found by the predicate or push a new element to the front of the array.
@@ -104,7 +106,7 @@ updateOrSnoc f xs x = case findLastIndex f xs of
 -- | ```
 updateOrCons :: forall a. (a -> Boolean) -> a -> Array a -> Array a
 updateOrCons f x xs = case findLastIndex f xs of
-  Nothing  -> cons x xs
+  Nothing -> cons x xs
   Just idx -> unsafePartial (unsafeUpdateAt idx x xs)
 
 -- | Finds a single element and returns it together with elements before and after.
@@ -112,10 +114,10 @@ updateOrCons f x xs = case findLastIndex f xs of
 -- | ```purescript
 -- | partitionSides (_ == 3) [1,2,3,4,5] == Just {before: [1,2], found: 3, after: [4,5]}
 -- | ```
-splitOn :: forall a. (a -> Boolean) -> Array a -> Maybe {before :: Array a, found :: a, after :: Array a}
+splitOn :: forall a. (a -> Boolean) -> Array a -> Maybe { before :: Array a, found :: a, after :: Array a }
 splitOn f xs = case findLastIndex f xs of
-  Nothing  -> Nothing
-  Just idx -> Just {before: take idx xs, found: unsafePartial (unsafeIndex xs idx), after: drop (idx + 1) xs}
+  Nothing -> Nothing
+  Just idx -> Just { before: take idx xs, found: unsafePartial (unsafeIndex xs idx), after: drop (idx + 1) xs }
 
 -- | Find an element and place an element before it.
 -- | Could also be thought of as placing the element in the place of the found element and moving al later elements.
@@ -125,7 +127,7 @@ splitOn f xs = case findLastIndex f xs of
 -- | ```
 insertBefore :: forall a. (a -> Boolean) -> a -> Array a -> Maybe (Array a)
 insertBefore f x xs = case findLastIndex f xs of
-  Nothing  -> Nothing
+  Nothing -> Nothing
   Just idx -> insertAt idx x xs
 
 -- | Find an element and place an element after it.
@@ -135,7 +137,7 @@ insertBefore f x xs = case findLastIndex f xs of
 -- | ```
 insertAfter :: forall a. (a -> Boolean) -> a -> Array a -> Maybe (Array a)
 insertAfter f x xs = case findLastIndex f xs of
-  Nothing  -> Nothing
+  Nothing -> Nothing
   Just idx -> insertAt (idx + 1) x xs
 
 -- | Find an element which could be projected into another value.
@@ -146,9 +148,9 @@ insertAfter f x xs = case findLastIndex f xs of
 -- | ```
 findMaybe :: forall a b. (a -> Maybe b) -> Array a -> Maybe b
 findMaybe f xs = case unsnoc xs of
-  Nothing             -> Nothing
+  Nothing -> Nothing
   Just { init, last } -> case f last of
     Just projection -> Just projection
-    Nothing         -> findMaybe f init
+    Nothing -> findMaybe f init
 
 -- todo: difference

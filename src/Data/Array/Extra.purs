@@ -13,35 +13,29 @@ module Data.Array.Extra
   , interleave
   , exactlyOne
   , maybeToArray
+  , orderByArray
+  , orderByArrayOrd
   , module Data.Foldable.Extra
   , module Data.Semigroup.Foldable.Extra
   , module Data.Traversable.Extra
   ) where
 
-import Data.Foldable.Extra
-import Data.Semigroup.Foldable.Extra
-import Data.Traversable.Extra
+import Data.Foldable.Extra (allPredicate, anyPredicate, groupMaybe, groupMaybeMap, mapEither, mapMaybeAny, occurrences, occurrencesMap, partitionMaybe, sameElements)
+import Data.Semigroup.Foldable.Extra (mapAny)
+import Data.Traversable.Extra (mapAll, mapMaybeWrite, mapMaybeWriteModify, mapModify)
+import Prelude
 
-import Control.Semigroupoid ((<<<))
-import Data.Array (catMaybes, cons, head, length, sortBy, uncons, findIndex)
+import Data.Array (catMaybes, cons, findIndex, head, length, mapWithIndex, sortBy, uncons)
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty as NEA
 import Data.Either (Either)
-import Data.Eq (class Eq, (==))
 import Data.Filterable (partitionMap)
 import Data.Foldable (fold)
 import Data.Function (on)
-import Data.Functor (map)
-import Data.HeytingAlgebra ((||))
 import Data.Map as Map
-import Data.Maybe (Maybe(..), fromJust)
-import Data.Ord (class Ord, comparing, (<), (>))
-import Data.Ordering (Ordering(..))
-import Data.Ring ((-))
-import Data.Semigroup ((<>))
+import Data.Maybe (Maybe(..), fromJust, fromMaybe)
 import Data.Tuple (Tuple(..), fst, snd)
 import Partial.Unsafe (unsafePartial)
-
 
 -- | Sort by multiple comparison functions.
 -- | Similar to SQL where you can specificy multiple columns with ASC and DESC.
@@ -74,7 +68,7 @@ sortOn f = sortBy (comparing f)
 -- | sortOn' (\x -> if x == "dog" then 2 else 1) ["apple", "dog", "kiwi"] = ["apple", "kiwi", "dog"]
 -- | ```
 sortOn' :: forall a b. Ord b => (a -> b) -> Array a -> Array a
-sortOn' f =  map snd <<< sortBy (comparing fst) <<< map (\x -> let y = f x in Tuple y x)
+sortOn' f = map snd <<< sortBy (comparing fst) <<< map (\x -> let y = f x in Tuple y x)
 
 -- | Sort a list by a projection and sort by a given comparison function.
 -- |
@@ -102,11 +96,13 @@ sortOnBy' f comp = map snd <<< sortBy (comp `on` fst) <<< map (\x -> let y = f x
 -- Implementers note: this could be simplified with https://github.com/purescript/purescript-prelude/issues/310
 sortOnByMaybe :: forall a b. (a -> Maybe b) -> (b -> b -> Ordering) -> Array a -> Array a
 sortOnByMaybe f comp xs =
-  let g Nothing  Nothing  = EQ
-      g (Just _) Nothing  = GT
-      g Nothing  (Just _) = LT
-      g (Just a) (Just b) = comp a b
-  in  sortOnBy f g xs
+  let
+    g Nothing Nothing = EQ
+    g (Just _) Nothing = GT
+    g Nothing (Just _) = LT
+    g (Just a) (Just b) = comp a b
+  in
+    sortOnBy f g xs
 
 -- | Sort a list by a projection and sort by a given comparison function.
 -- | When the projection returns Nothing those items will be placed last. Useful if your Array contains items with missing data to sort on
@@ -117,11 +113,13 @@ sortOnByMaybe f comp xs =
 -- | ```
 sortOnByMaybe' :: forall a b. (a -> Maybe b) -> (b -> b -> Ordering) -> Array a -> Array a
 sortOnByMaybe' f comp xs =
-  let g Nothing  Nothing  = EQ
-      g (Just _) Nothing  = GT
-      g Nothing  (Just _) = LT
-      g (Just a) (Just b) = comp a b
-  in  sortOnBy' f g xs
+  let
+    g Nothing Nothing = EQ
+    g (Just _) Nothing = GT
+    g Nothing (Just _) = LT
+    g (Just a) (Just b) = comp a b
+  in
+    sortOnBy' f g xs
 
 -- | Partitions an array of Either into two arrays. All the Left elements are put, in order, into the left field of the output record. Similarly the Right elements are put into the right field of the output record.
 -- | Note that this function is an alias for `partitionMap` from `Data.Filterable`.
@@ -130,7 +128,7 @@ sortOnByMaybe' f comp xs =
 -- | ```purescript
 -- | partitionEithers (\a -> if a > 2 then Left a else Right a) [1,2,3,4] == {left: [1,2], right: [3,4]}
 -- | ```
-partitionEithers :: forall a l r. (a -> Either l r) -> Array a -> {left :: Array l, right :: Array r}
+partitionEithers :: forall a l r. (a -> Either l r) -> Array a -> { left :: Array l, right :: Array r }
 partitionEithers = partitionMap
 
 -- -- | Like unionBy between array A and array B. With elements left out from B being included when they match the predicate.
@@ -165,14 +163,16 @@ partitionEithers = partitionMap
 -- | ```
 combinations :: forall a. Int -> Array a -> Maybe (Array (NonEmptyArray a))
 combinations n xs =
-  let f 0  _   = [[]]
-      f nn xs' = case uncons xs' of
-        Nothing           -> []
-        Just {head, tail} -> map (cons head) (f (nn - 1) tail) <> f n tail
-  in  if n < 1 || n > length xs then
-        Nothing
-      else
-        Just (map (\x -> unsafePartial (fromJust (NEA.fromArray x))) (f n xs))
+  let
+    f 0 _ = [ [] ]
+    f nn xs' = case uncons xs' of
+      Nothing -> []
+      Just { head, tail } -> map (cons head) (f (nn - 1) tail) <> f n tail
+  in
+    if n < 1 || n > length xs then
+      Nothing
+    else
+      Just (map (\x -> unsafePartial (fromJust (NEA.fromArray x))) (f n xs))
 
 -- | Takes an element from each array in turn to produce a new array.
 -- |
@@ -182,12 +182,16 @@ combinations n xs =
 -- | ```
 interleave :: forall a. Array (Array a) -> Array a
 interleave xss =
-  let f :: Tuple (Array (Array a)) (Array a) -> Tuple (Array (Array a)) (Array a)
-      f (Tuple [] acc)  = Tuple [] acc
-      f (Tuple xss' acc) =
-        let heads_tails = catMaybes (map uncons xss')
-        in  f (Tuple (map (_.tail) heads_tails) (map (_.head) heads_tails <> acc))
-  in  snd (f (Tuple xss []))
+  let
+    f :: Tuple (Array (Array a)) (Array a) -> Tuple (Array (Array a)) (Array a)
+    f (Tuple [] acc) = Tuple [] acc
+    f (Tuple xss' acc) =
+      let
+        heads_tails = catMaybes (map uncons xss')
+      in
+        f (Tuple (map (_.tail) heads_tails) (map (_.head) heads_tails <> acc))
+  in
+    snd (f (Tuple xss []))
 
 -- | When the array has only one element, return this element.
 -- | This function is the opposite from `singleton`.
@@ -212,8 +216,8 @@ exactlyOne xs = case length xs of
 -- | maybeToArray (Just 2) == [2]
 -- | ```
 maybeToArray :: forall a. Maybe a -> Array a
-maybeToArray Nothing      = []
-maybeToArray (Just value) = [value]
+maybeToArray Nothing = []
+maybeToArray (Just value) = [ value ]
 
 -- | Given two arrays, sort the second one by the order of the first one
 -- | The elements of each array will be compared to each other with their own projection functions.
@@ -225,14 +229,16 @@ maybeToArray (Just value) = [value]
 -- | ```
 orderByArray :: forall x y a. Eq a => (x -> a) -> (y -> a) -> Array x -> Array y -> Array y
 orderByArray proj_x proj_y xs ys =
-  let findIndexY y = findIndex (\x -> proj_x x == proj_y y) xs
-      compareIndices y1 y2 =
-        case Tuple (findIndexY y1) (findIndexY y2) of
-          Tuple (Just i1) (Just i2) -> compare i1 i2
-          Tuple (Just _)  Nothing   -> LT
-          Tuple Nothing   (Just _)  -> GT
-          Tuple Nothing   Nothing   -> EQ
-  in  sortBy compareIndices ys
+  let
+    findIndexY y = findIndex (\x -> proj_x x == proj_y y) xs
+    compareIndices y1 y2 =
+      case Tuple (findIndexY y1) (findIndexY y2) of
+        Tuple (Just i1) (Just i2) -> compare i1 i2
+        Tuple (Just _) Nothing -> LT
+        Tuple Nothing (Just _) -> GT
+        Tuple Nothing Nothing -> EQ
+  in
+    sortBy compareIndices ys
 
 -- | Given two arrays, sort the second one by the order of the first one
 -- | The elements of each array will be compared to each other with their own projection functions.
@@ -241,8 +247,10 @@ orderByArray proj_x proj_y xs ys =
 -- | Same as `orderByArray` but potentially faster due to using a Map internally. You will have to benchmark your specific situation to find out whether `orderByArray` or `orderByArrayOrd'` is faster.
 orderByArrayOrd :: forall x y a. Ord a => (x -> a) -> (y -> a) -> Array x -> Array y -> Array y
 orderByArrayOrd proj_x proj_y xs ys =
-  let indexMap = Map.fromFoldable (mapWithIndex (\i x -> Tuple (proj_x x) i) xs)
-  in  sortBy (comparing (\y -> fromMaybe (length xs) $ Map.lookup (proj_y y) indexMap)) ys
+  let
+    indexMap = Map.fromFoldable (mapWithIndex (\i x -> Tuple (proj_x x) i) xs)
+  in
+    sortBy (comparing (\y -> fromMaybe (length xs) $ Map.lookup (proj_y y) indexMap)) ys
 
 -- zipOn :: forall a b c d. (a -> Maybe d) (b -> Maybe d) (a -> b -> c) -> Array a -> Array b -> Array c
 -- zipOn f_a f_b c xs ys -- start searching the smallest array first
