@@ -17,5 +17,5 @@ package:
       githubOwner: flip111
       githubRepo: purescript-arrays-extra
 workspace:
-  package_set:
-    registry: 49.0.0
+  packageSet:
+    registry: 64.6.0
